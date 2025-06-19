@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Tracking</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div>
+        <%- include('nav') %>
+    </div>
+    <div class="container my-5 bg-light">
+        <h1 class="text-center mb-4">Track Your Orders</h1>
+        
+        <div id="orders-list">
+            <p class="text-muted text-center">Loading your orders...</p>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const userId = <%= userId %>; // Inserted from server-side template
+        const socket = io();
+    
+        async function fetchOrders() {
+            try {
+                const response = await fetch(`/orders/${userId}`);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const orders = await response.json();
+                if (orders.length > 0) {
+                    displayOrders(orders);
+                } else {
+                    document.getElementById('orders-list').innerHTML = `<p class="text-center text-danger">No orders found.</p>`;
+                }
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+                document.getElementById('orders-list').innerHTML = `<p class="text-center text-danger">Failed to load orders: ${error.message}</p>`;
+            }
+        }
+    
+        function displayOrders(orders) {
+            const ordersDiv = document.getElementById('orders-list');
+            ordersDiv.innerHTML = ""; 
+            orders.sort((a, b) => b.order_id - a.order_id);
+    
+            orders.forEach(order => {
+                ordersDiv.innerHTML += createOrderHtml(order);
+            });
+        }
+    
+        function createOrderHtml(order) {
+            const statusTextMap = {
+                "Received": { text: "Order Received", colorClass: "text-secondary" },
+                "Preparing": { text: "Preparing your Order", colorClass: "text-warning" },
+                "Completed": { text: "Order Completed", colorClass: "text-success" }
+            };
+    
+            const status = statusTextMap[order.status] || { text: `Status: ${order.status}`, colorClass: "text-muted" };
+            const discountAmount = order.discountAmount ?? 0;
+            const finalTotal = order.total_price - discountAmount;
+    
+            return `
+                <div class="card my-3" id="order-${order.order_id}">
+                    <div class="card-header bg-primary text-white">
+                        Order ID: ${order.order_id}
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title ${status.colorClass}">${status.text}</h5>
+                        <p><strong>Total Before Discount:</strong> $${order.total_price.toFixed(2)}</p>
+                        ${order.promotion ? `<p><strong>Promotion:</strong> ${order.promotion} - Discount: $${discountAmount.toFixed(2)}</p>` : ''}
+                        <p><strong>Final Total:</strong> $${finalTotal.toFixed(2)}</p>
+                        <ul class="list-group">
+                            ${order.items.map(item => `
+                                <li class="list-group-item">
+                                    <strong>${item.pro_name}</strong> x ${item.quantity} - $${(item.price * item.quantity).toFixed(2)}
+                                    <br><small>Details: ${item.detail || 'No details provided'}</small>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+    
+        // Update a specific order when the status changes
+        socket.on('orderStatusUpdate', (updatedOrder) => {
+            const orderElement = document.getElementById(`order-${updatedOrder.order_id}`);
+            if (orderElement) {
+                orderElement.outerHTML = createOrderHtml(updatedOrder);
+            }
+        });
+    
+        fetchOrders();
+    </script>
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

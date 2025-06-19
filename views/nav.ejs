@@ -1,0 +1,34 @@
+<link rel="stylesheet" href="/css/nav.css">
+
+    <nav>
+        <div class = "all-bar">
+            <div class="left-bar">
+                <a href="/">
+                    <div class ="logo" >
+                    </div>
+                </a>
+                <% if (req.session.isLoggedIn) { %>
+                    <% if (req.session.user.role_id === 1) { %>
+                        <li><a href="order">Order</a></li>
+                        <li><a href="product_manage">Product Manage</a></li>
+                        <li><a href="product_add">Product Add</a></li>
+                        <li><a href="user_manage">User Manage</a></li>
+                        <li><a href="staff_orders">Staff Orders</a></li>
+                        <li><a href="order_Tracking">Order Tracking</a></li>
+                        <li><a href="order_history">Order History</a></li>
+                    <% } else if (req.session.user.role_id === 2) { %>
+                        <li><a href="order">Order</a></li>
+                        <li><a href="order_Tracking">Order Tracking</a></li>
+                    <% } %>
+                <% } %>
+            </div>
+            <div class="right-bar">
+                <% if (!req.session.isLoggedIn) { %>
+                    <li><a href="login">Login</a></li>
+                <% } else { %>
+                    <li><a href="/logout" class="">Logout</a></li>
+                <% } %>
+            </div>
+
+        </div>
+    </nav>

@@ -1,0 +1,55 @@
+body{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex-direction: column;
+    background-color:black;
+}
+.content{
+    margin-top:100px;
+    width:900px;
+    height:600px;
+    background-image: url("/img/login.avif");
+    background-position: center;
+    background-size: cover;
+    display:flex;
+}
+.left{
+    width:50%;
+}        
+.img{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+.sign-logo{
+    width: 100px;
+    height:100px;
+    overflow:hidden;
+    border-radius:80px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+.signin-con{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    margin-top:100px;
+}
+.right{
+    color:#ffffff;
+    width:50%;
+    height:100%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding-left:30px;
+}
+.right-content{
+    width:80%;
+    height:80%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}

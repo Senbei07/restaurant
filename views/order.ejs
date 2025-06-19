@@ -1,0 +1,234 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/order.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+        <%- include('nav') %>
+    <div class="container my-4">
+        <h1 class="text-center mb-4 text-white">Product List</h1>
+        
+        <!-- แสดงชื่อและนามสกุลของผู้ใช้ -->
+        <div class="mb-3 text-end text-white d-flex align-items-end justify-content-center flex-column">
+            <div><strong>User:</strong> <%= user.name %> <%= user.surname %></div>
+
+            <!-- ปุ่มเปิด Modal ตะกร้าสินค้า -->
+            <button class="btn btn-light mt-4" data-bs-toggle="modal" data-bs-target="#cartModal">ดูตะกร้า</button>
+        </div>
+
+
+        <!-- แสดงเมนูตามประเภท -->
+
+        <% categories.forEach(category => { %>
+            <h2 class="my-3 text-white "><%= category.category %></h2>
+            <div class="row">
+                <% products
+                    .filter(product => product.category === category.category)
+                    .forEach(product => { %>
+                    <div class="col-md-4 mb-4">
+                        <a class="card" onclick="openDetailModal('<%= product.id %>', '<%= product.name %>', '<%= product.price %>', '<%= category %>')">
+                            <img src="/uploads/<%= product.img %>" class="card-img-top menu-img" alt="<%= product.name %>">
+                            <div class="card-body">
+                                <h5 class="card-title"><%= product.name %></h5>
+                                <p class="card-text">Price: $<%= product.price %></p>
+                            </div>
+                        </a >
+                    </div>
+                <% }); %>
+            </div>
+        <% }); %>
+
+
+        <!-- Modal ตะกร้าสินค้า -->
+        <div class="modal fade" id="cartModal" tabindex="-1" aria-labelledby="cartModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="cartModalLabel">Your Cart</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="cart" class="mb-4"></div>
+                        <div id="totalPrice" class="text-end fw-bold"></div>
+                        
+                        <!-- ส่วนเลือกโปรโมชั่น -->
+                        <div class="mt-3">
+                            <label for="promotionSelect" class="form-label">เลือกโปรโมชั่น:</label>
+                            <select class="form-select" id="promotionSelect" onchange="applyPromotion()">
+                                <option value="">-- ไม่ใช้โปรโมชั่น --</option>
+                                <% promotions.forEach(promo => { %>
+                                    <option value="<%= promo.promo_id %>" 
+                                            data-discount="<%= promo.promo_discount %>" 
+                                            data-minimum="<%= promo.promo_minimum %>" 
+                                            data-maximum="<%= promo.promo_maximum %>" 
+                                            data-type="<%= promo.promo_type %>">
+                                        <%= promo.promo_name %> - ลด <%= promo.promo_type === 1 ? promo.promo_discount + '%' : '$' + promo.promo_discount %> (ขั้นต่ำ $<%= promo.promo_minimum %>)
+                                    </option>
+                                <% }); %>
+                            </select>
+                        </div>
+                        
+                        <div id="discountAmount" class="text-end fw-bold mt-2"></div>
+                        <div id="finalPrice" class="text-end fw-bold"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button class="btn btn-primary" onclick="placeOrder()">สั่งอาหาร</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal สำหรับเพิ่มรายละเอียดเพิ่มเติม -->
+        <div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="detailModalLabel">Add Details for <span id="modalProductName"></span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="detailForm">
+                            <input type="hidden" id="modalProductId">
+                            <input type="hidden" id="modalProductPrice">
+                            <div class="mb-3">
+                                <label for="customDetails" class="form-label">รายละเอียดเพิ่มเติม</label>
+                                <input type="text" class="form-control" id="customDetails" placeholder="เช่น เพิ่มชีส, เพิ่มเผ็ด">
+                            </div>
+                            <div class="mb-3" id="sweetnessGroup">
+                                <label for="sweetness" class="form-label">ระดับความหวาน</label>
+                                <select class="form-select" id="sweetness">
+                                    <option value="100%">100%</option>
+                                    <option value="75%">75%</option>
+                                    <option value="50%">50%</option>
+                                    <option value="25%">25%</option>
+                                    <option value="0%">0%</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Add to Cart</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const socket = io();
+            let totalAmount = 0;
+            let finalAmount = 0;
+
+            function openDetailModal(productId, productName, productPrice, productCategory) {
+                document.getElementById('modalProductId').value = productId;
+                document.getElementById('modalProductName').textContent = productName;
+                document.getElementById('modalProductPrice').value = productPrice;
+                document.getElementById('sweetnessGroup').style.display = productCategory.toLowerCase() === 'beverage' ? 'block' : 'none';
+                document.getElementById('customDetails').value = '';
+                document.getElementById('sweetness').value = '100%';
+                new bootstrap.Modal(document.getElementById('detailModal')).show();
+            }
+
+            document.getElementById('detailForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                const productId = document.getElementById('modalProductId').value;
+                const customDetails = document.getElementById('customDetails').value;
+                const sweetness = document.getElementById('sweetnessGroup').style.display === 'block' ? document.getElementById('sweetness').value : null;
+                const productPrice = document.getElementById('modalProductPrice').value;
+                socket.emit('addToCart', { productId, customDetails, sweetness, productPrice });
+                bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide();
+            });
+
+            function applyPromotion() {
+                const promoSelect = document.getElementById('promotionSelect');
+                const selectedPromo = promoSelect.options[promoSelect.selectedIndex];
+                const discountRate = parseFloat(selectedPromo.getAttribute('data-discount')) || 0;
+                const minAmount = parseFloat(selectedPromo.getAttribute('data-minimum')) || 0;
+                const maxDiscount = parseFloat(selectedPromo.getAttribute('data-maximum')) || 0;
+                const promoType = parseInt(selectedPromo.getAttribute('data-type'), 10);
+
+                let discountAmount = 0;
+
+                // ตรวจสอบขั้นต่ำในการใช้โปรโมชั่น
+                if (totalAmount >= minAmount) {
+                    // คำนวณส่วนลดตามประเภทของโปรโมชั่น
+                    if (promoType === 1) {
+                        discountAmount = (totalAmount * discountRate) / 100;
+                    } else if (promoType === 2) {
+                        discountAmount = discountRate;
+                    }
+
+                    discountAmount = Math.min(discountAmount, maxDiscount);  // ตรวจสอบขีดจำกัดส่วนลดสูงสุด
+                    finalAmount = totalAmount - discountAmount;
+
+                    document.getElementById('discountAmount').textContent = `Discount: $${discountAmount.toFixed(2)}`;
+                    document.getElementById('finalPrice').textContent = `Final Price: $${finalAmount.toFixed(2)}`;
+                } else {
+                    document.getElementById('discountAmount').textContent = 'Not eligible for this promotion';
+                    finalAmount = totalAmount;
+                    document.getElementById('finalPrice').textContent = `Final Price: $${totalAmount.toFixed(2)}`;
+                }
+            }
+
+            function updateCart(cart) {
+                const cartDiv = document.getElementById('cart');
+                cartDiv.innerHTML = '';
+                totalAmount = 0;
+                
+                cart.forEach(item => {
+                    cartDiv.innerHTML += `
+                        <div class="d-flex flex-column p-2 border-bottom">
+                            <div class="d-flex justify-content-between">
+                                <span>${item.name}</span>
+                                <span>x ${item.quantity}</span>
+                                <span>$${item.price}</span>
+                            </div>
+                            <div class="text-muted" style="font-size: 0.9em;">
+                                ${item.sweetness ? 'Sweetness: ' + item.sweetness : ''}
+                            </div>
+                            <div class="text-muted" style="font-size: 0.9em;">
+                                ${item.customDetails ? '- ' + item.customDetails : ''}
+                            </div>
+                            <div class="mt-1">
+                                <button class="btn btn-sm btn-outline-success" onclick="updateQuantity('${item.id}', 'increase')">+</button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="updateQuantity('${item.id}', 'decrease')">-</button>
+                            </div>
+                        </div>`;
+                    totalAmount += item.price * item.quantity;
+                });
+                
+                document.getElementById('totalPrice').textContent = `Total Price: $${totalAmount.toFixed(2)}`;
+                applyPromotion();
+            }
+
+            socket.on('updateCart', (cart) => {
+                updateCart(cart);
+            });
+
+            function updateQuantity(productId, action) {
+                // ส่งข้อมูลไปยังเซิร์ฟเวอร์เพื่ออัปเดตจำนวน
+                socket.emit('updateQuantity', { productId, action });
+            }
+
+
+            function placeOrder() {
+                const selectedPromoId = document.getElementById('promotionSelect').value;
+
+                fetch('/save-promotion', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ promoId: selectedPromoId })
+                }).then(() => {
+                    window.location.href = '/order-summary';
+                });
+            }
+
+        </script>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    </body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Manage</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.2.3/css/buttons.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+    <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.2.3/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.html5.min.js"></script>
+</head>
+<body>
+    <div>
+        <%- include('nav') %>
+    </div>
+    <div class="container my-4 bg-light">
+        <table id="product_table" class="table table-bordered text-white">
+            <thead>
+                <tr>
+                    <th>ลำดับ</th>
+                    <th>รูปภาพ</th>
+                    <th>ชื่ออาหาร</th>
+                    <th>ประเภทอาหาร</th>
+                    <th>ราคา</th>
+                    <th>Manage</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% 
+                    let i = 1;
+                    products.forEach(product => { 
+                %>
+                <tr id="product-<%= product.id %>">
+                    <td><%= i %></td>
+                    <td><img src="/uploads/<%= product.img %>" class="card-img-top" alt="<%= product.name %>" style="width: 100px; height: auto;"></td>
+                    <td><%= product.name %></td>
+                    <td><%= product.category %></td>
+                    <td><%= product.price %></td>
+                    <td>
+                        <button data-id="<%= product.id %>" class="edit btn btn-primary" style="margin-left:10px">edit</button>
+                        <button data-id="<%= product.id %>" data-name="<%= product.name %>" class="delete btn btn-danger" style="margin-left:10px">delete</button>
+
+                    </td>
+                </tr>
+                <% 
+                    i += 1;
+                    }); 
+                %> 
+            </tbody>
+        </table>
+    </div>
+
+    <!-- DataTables Setup Script -->
+    <script>
+        $(document).ready(function() {
+            $('#product_table').DataTable({
+                dom: 'Bfrtip',
+                buttons: [
+                    {
+                        extend: 'excelHtml5',
+                        text: 'Export to Excel',
+                        filename: 'Product_List',
+                        title: 'Product List'
+                    }
+                ]
+            });
+        });
+    
+        const editButtons = document.querySelectorAll('.edit');
+        const deleteButtons = document.querySelectorAll('.delete');
+    
+        // เพิ่ม event listener ให้กับปุ่ม edit แต่ละปุ่ม
+        editButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                const product_id = button.getAttribute('data-id');
+                window.location.href = `/product_edit/${product_id}`;
+            });
+        });
+    
+        // เพิ่ม event listener ให้กับปุ่ม delete แต่ละปุ่ม พร้อมการแจ้งเตือนยืนยัน
+        deleteButtons.forEach((button) => {
+            button.addEventListener('click', async () => {
+                const product_id = button.getAttribute('data-id');
+                const product_name = button.getAttribute('data-name'); // ดึงชื่อสินค้า
+
+                // ยืนยันการลบ
+                const confirmDelete = confirm(`Are you sure you want to delete the product "${product_name}"?`);
+                if (!confirmDelete) {
+                    return; // ถ้าไม่ได้กด OK ให้หยุดการทำงานของฟังก์ชัน
+                }
+
+                // ถ้ากดยืนยันการลบแล้ว ดำเนินการลบ
+                const response = await fetch(`/product_delete/${product_id}`, {
+                    method: 'DELETE',
+                });
+
+                if (response.ok) {
+                    console.log(`ลบสินค้าด้วย ID ${product_id} สำเร็จ`);
+                    document.getElementById(`product-${product_id}`).remove();
+                } else {
+                    console.log('เกิดข้อผิดพลาดในการลบสินค้า');
+                }
+            });
+        });
+
+    </script>
+    
+</body>
+</html>

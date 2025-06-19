@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Edit</title>
+</head>
+<body>
+    <div>
+        <%- include('nav') %>
+    </div>
+    <h2>Edit User</h2>
+    <form action="/update-user/<%= user_edit.u_id %>" method="POST">
+        <label for="titlename">Title Name:</label>
+        <select name="titlename" id="titlename" required>
+            <% titlename.forEach(title => { %>
+                <option value="<%= title.title_id %>" <%= title.title_id === user_edit.title_id ? 'selected' : '' %>>
+                    <%= title.title_name %>
+                </option>
+            <% }); %>
+        </select>
+        
+        <input type="text" name="name" id="name" placeholder="Name" required value="<%= user_edit.u_name %>">
+        <input type="text" name="surname" id="surname" placeholder="Surname" required value="<%= user_edit.u_surname %>">
+
+        <label for="gender">Gender:</label>
+        <select name="gender" id="gender" required>
+            <% genders.forEach(gender => { %>
+                <option value="<%= gender.gender_id %>" <%= gender.gender_id === user_edit.gender_id ? 'selected' : '' %>>
+                    <%= gender.gender_name %>
+                </option>
+            <% }); %>
+        </select>        
+
+        <input type="text" name="tel" id="tel" placeholder="Telephone" required value="<%= user_edit.u_tel %>">
+        
+        <button type="submit">Update</button>
+    </form>
+
+    <div id="message"></div>
+</body>
+</html>

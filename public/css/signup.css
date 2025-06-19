@@ -1,0 +1,42 @@
+*{
+    margin:0;
+    padding:0;
+}
+body{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex-direction: column;
+    background-color:black;
+    color:#ffffff;
+}
+.content{
+    margin-top:100px;
+    width:900px;
+    height:600px;
+    background-image: url("/img/signup.avif");
+    background-position: center;
+    background-size: cover;
+    display:flex;
+    align-items:center;
+}
+.form{
+    width:80%;
+    height:80%;
+    display:flex;
+    align-items:center;
+    padding-left:40px;
+}
+.mgb-10{
+    margin-bottom:10px
+}
+.lab-form{
+    margin-right:20px;
+}
+#message{
+    color: red;
+    font-size: 20px;
+    text-align: center;
+    width: 100%;
+    margin-bottom: 20px;
+}

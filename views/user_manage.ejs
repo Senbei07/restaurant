@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User_manage</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div>
+        <%- include('nav') %>
+    </div>
+    <div class="container my-4">
+        <table class="table table-bordered text-white">
+            <thead>
+                <tr> 
+                    <th>ลำดับ</th>                   
+                    <th>ชื่อ-นามสกุล</th>
+                    <th>เพศ</th>
+                    <th>เบอร์โทรศัพท์</th>
+                    <th>Manage</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% 
+                    let i = 1;
+                    user.forEach(user => { 
+                %>
+                <tr id="user-<%= user.u_id %>">
+                    <td><%= i %></td>
+                    <td><%= user.title_name + ' ' + user.u_name + ' ' + user.u_surname %></td>
+                    <td><%= user.gender_name %></td>
+                    <td><%= user.u_tel %></td>
+                    <td>
+                        <button data-id="<%= user.u_id %>" class="edit btn btn-primary" style="margin-left:10px">edit</button>
+                        <button data-id="<%= user.u_id %>" data-name="<%= user.title_name + ' ' + user.u_name + ' ' + user.u_surname %>" class="delete btn btn-danger" style="margin-left:10px">delete</button>
+                    </td>
+                </tr>
+                <% 
+                    i += 1;
+                    }); 
+                %> 
+            </tbody>
+        </table>
+    </div>
+    <script>
+        const editButtons = document.querySelectorAll('.edit');
+        const deleteButtons = document.querySelectorAll('.delete');
+    
+        editButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                const u_id = button.getAttribute('data-id');
+                window.location.href = `/user_edit/${u_id}`;
+            });
+        });
+    
+        deleteButtons.forEach((button) => {
+            button.addEventListener('click', async () => {
+                const user_id = button.getAttribute('data-id'); 
+                const user_name = button.getAttribute('data-name'); // ดึงชื่อผู้ใช้จาก data-name
+    
+                // ยืนยันการลบโดยใช้ชื่อผู้ใช้
+                const confirmDelete = confirm(`Are you sure you want to delete ${user_name}?`);
+                if (!confirmDelete) {
+                    return; // ถ้าไม่ได้กด OK ให้หยุดการทำงานของฟังก์ชัน
+                }
+    
+                const response = await fetch(`/user_delete/${user_id}`, {
+                    method: 'DELETE',
+                });
+    
+                if (response.ok) {
+                    document.getElementById(`user-${user_id}`).remove();
+                    console.log(`ลบผู้ใช้ ${user_name} สำเร็จ`);
+                } else {
+                    console.log('เกิดข้อผิดพลาดในการลบผู้ใช้');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

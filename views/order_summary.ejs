@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Summary</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div>
+        <%- include('nav') %>
+    </div>
+    <div class="container my-5 bg-light">
+        <h1 class="text-center mb-4">Order Summary</h1>
+
+        <!-- แสดงรายการสินค้าในตะกร้า -->
+        <div class="card p-3">
+            <% if (cart.length > 0) { %>
+                <% cart.forEach((item, index) => { %>
+                    <div class="d-flex justify-content-between border-bottom py-2">
+                        <div>
+                            <strong><%= item.name %></strong> 
+                            <span class="text-muted"> x <%= item.quantity %></span>
+                            <div class="text-muted" style="font-size: 0.9em;">
+                                <%= item.customDetails ? 'Details: ' + item.customDetails : '' %>
+                                <%= item.sweetness ? 'Sweetness: ' + item.sweetness : '' %>
+                            </div>
+                        </div>
+                        <div>
+                            $<%= (item.price * item.quantity).toFixed(2) %>
+                        </div>
+                    </div>
+                <% }); %>
+                
+                <!-- ราคารวมทั้งหมด -->
+                <div class="d-flex justify-content-between mt-3">
+                    <h5>Total Before Discount:</h5>
+                    <h5>$<%= total.toFixed(2) %></h5>
+                </div>
+
+                <!-- แสดงส่วนลดจากโปรโมชั่น -->
+                <% if (promotion && total >= promotion.promo_minimum) { %>
+                    <div class="d-flex justify-content-between mt-3">
+                        <h5>Discount (<%= promotion.promo_name %>):</h5>
+                        <% 
+                            let discountAmount = promotion.promo_type === 1 
+                                ? Math.min(total * (promotion.promo_discount / 100), promotion.promo_maximum) 
+                                : Math.min(promotion.promo_discount, promotion.promo_maximum);
+                            let finalTotal = total - discountAmount;
+                        %>
+                        <h5>-$<%= discountAmount.toFixed(2) %></h5>
+                    </div>
+                    <div class="d-flex justify-content-between mt-3">
+                        <h5>Final Total:</h5>
+                        <h5>$<%= finalTotal.toFixed(2) %></h5>
+                    </div>
+                <% } else { %>
+                    <div class="d-flex justify-content-between mt-3">
+                        <h5>Final Total:</h5>
+                        <h5>$<%= total.toFixed(2) %></h5>
+                    </div>
+                <% } %>
+            <% } else { %>
+                <p class="text-center">Your cart is empty.</p>
+            <% } %>
+        </div>
+
+        <!-- ปุ่มยืนยันการสั่งซื้อ -->
+        <div class="text-center mt-4">
+            <button class="btn btn-primary btn-lg" onclick="confirmOrder()">Confirm Order</button>
+            <button class="btn btn-secondary btn-lg" onclick="window.location.href='/order'">Back to order</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        async function confirmOrder() {
+            try {
+                const confirmResponse = await fetch('/confirm-order', {
+                    method: 'POST'
+                });
+
+                if (confirmResponse.ok) {
+                    const clearResponse = await fetch('/clear-cart', {
+                        method: 'POST'
+                    });
+
+                    if (clearResponse.ok) {
+                        alert('Order confirmed! Thank you for your purchase.');
+                        socket.emit('new_order');
+                        window.location.href = '/order';
+                    } else {
+                        alert('Failed to clear cart. Please try again.');
+                    }
+                } else {
+                    alert('Failed to confirm order. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            }
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

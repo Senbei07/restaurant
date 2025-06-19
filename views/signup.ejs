@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/signup.css">
+    <title>Signup</title>
+</head>
+<body>
+    <%- include('nav') %>
+    <div class="content">
+        
+        <div class="form">
+            <form id="signupForm">
+                <div id="message"></div>
+                <div>
+                    <label for="titlename">Title Name:</label>
+                    <select name="titlename" id="titlename" required>
+                        <% titlename.forEach(titlename => { %>
+                            <option value="<%= titlename.title_id %>"><%= titlename.title_name %></option>
+                        <% }); %>
+                    </select>
+                </div>
+                <div>
+                    <label for="fname" class="lab-form">ชื่อ</label>
+                    <input type="text" id="name" placeholder="Name" required class="mgb-10 ">
+                </div>
+                <div>
+                    <label for="lname" class="lab-form">นามสกุล</label>
+                    <input type="text" id="surname" placeholder="Surname" required class="mgb-10 ">
+                </div>
+                <div>
+                    <label for="gender">Gender:</label>
+                    <select name="gender" id="gender" required>
+                        <% genders.forEach(genders => { %>
+                            <option value="<%= genders.gender_id %>"><%= genders.gender_name %></option>
+                        <% }); %>
+                    </select>  
+                </div>
+                <div>
+                    <label for="tel" class="lab-form">เบอร์โทร</label>
+                    <input type="text" id="username" placeholder="Username" required class="mgb-10 ">
+                </div>
+                <div>
+                    <label for="password" class="lab-form">รหัสผ่าน</label>
+                    <input type="password" id="password" placeholder="Password" class="mgb-10 " required>
+                </div>
+                <div>
+                    <label for="c_password" class="lab-form">ยืนยันรหัสผ่าน</label>
+                    <input type="password" name="c_password" id="c_password" class="mgb-10 " required>
+                </div>
+                <div style="margin-bottom:20px">
+                    <button type="submit" class="btn btn-light btn-sm">Signup</button>
+                </div>
+                <div>
+                <label for="signin" >เป็นสมาชิกอยู่แล้วใช่ไหม?</label>
+                    <a href="login" id="login" style="text-decoration: underline">Login</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('signupForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const c_password = document.getElementById('c_password').value;
+    const title_name = document.getElementById('titlename').value;
+    const name = document.getElementById('name').value;
+    const surname = document.getElementById('surname').value;
+    const gender = document.getElementById('gender').value;
+
+    try {
+        const response = await fetch('/signup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password, c_password,title_name, name, surname, gender })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            document.getElementById('message').textContent = data.message;
+            if (data.redirect) {
+                setTimeout(() => {
+                    window.location.href = data.redirect;
+                }, 500);
+            }
+        } else {
+            const errorText = await response.text();
+            document.getElementById('message').textContent = errorText || 'Signup failed';
+        }
+    } catch (error) {
+        document.getElementById('message').textContent = 'Error: ' + error.message;
+    }
+});
+
+    </script>
+</body>
+</html>
